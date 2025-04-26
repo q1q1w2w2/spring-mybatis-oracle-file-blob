@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>파일 업로드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+</head>
+
+<body>
+
+<div class="bg-gray-100 min-h-screen flex flex-col items-center p-10"
+     x-data="fileUploadApp" x-init="loadFiles()">
+
+    <h1 class="text-3xl font-bold mb-6">파일 업로드</h1>
+
+    <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-md flex flex-col space-y-4">
+        <input type="file" x-ref="fileInput" multiple class="block w-full text-sm text-gray-500"/>
+        <button @click="uploadFile"
+                class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded">
+            업로드
+        </button>
+    </div>
+
+
+    <h1 class="text-2xl font-bold mt-10 mb-4">파일 다운로드</h1>
+
+    <div class="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
+        <template x-for="file in files" :key="file.fileId">
+            <div class="mb-2">
+                <a :href="`/download/${file.fileId}`" :download="file.fileName" class="text-blue-600 hover:underline">
+                    <span x-text="file.fileName"></span>
+                </a>
+            </div>
+        </template>
+    </div>
+</div>
+
+</body>
+
+<script>
+    document.addEventListener('alpine:init', () => {
+        Alpine.data('fileUploadApp', () => ({
+            files: [],
+
+            async loadFiles() {
+                const response = await fetch('/list');
+                if (response.ok) {
+                    this.files = await response.json();
+                }
+            },
+
+            async uploadFile() {
+                if (!this.$refs.fileInput.files.length) {
+                    alert('업로드할 파일을 선택하세요!');
+                    return;
+                }
+                if (this.$refs.fileInput.files.length > 5) {
+                    alert('파일은 최대 5개까지만 추가할 수 있습니다.');
+                    return;
+                }
+
+                const formData = new FormData();
+                for (let file of this.$refs.fileInput.files) {
+                    formData.append('files', file);
+                }
+
+                const response = await fetch('/insert', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    alert('업로드 성공!');
+                    this.loadFiles();
+                    this.$refs.fileInput.value = '';
+                } else {
+                    alert('업로드 실패!');
+                }
+            },
+
+
+        }));
+    })
+</script>
+
+</html>
